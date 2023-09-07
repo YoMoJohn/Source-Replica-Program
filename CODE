@@ -1,0 +1,48 @@
+import os
+import shutil
+import argparse
+import time
+
+def sync_folders(source_folder, replica_folder, log_file):
+    # Create the replica folder if it doesn't exist
+    if not os.path.exists(replica_folder):
+        os.makedirs(replica_folder)
+
+    # List all files in the source folder
+    source_files = set(os.listdir(source_folder))
+    replica_files = set(os.listdir(replica_folder))
+
+    # Calculate files to copy from source to replica
+    files_to_copy = source_files - replica_files
+
+    # Copy new files from source to replica
+    for file in files_to_copy:
+        source_path = os.path.join(source_folder, file)
+        replica_path = os.path.join(replica_folder, file)
+        shutil.copy2(source_path, replica_path)
+        log(f"Copied {file} from {source_folder} to {replica_folder}")
+
+    # Remove files from replica that don't exist in the source
+    files_to_remove = replica_files - source_files
+    for file in files_to_remove:
+        replica_path = os.path.join(replica_folder, file)
+        os.remove(replica_path)
+        log(f"Removed {file} from {replica_folder}")
+
+def log(message):
+    with open(log_file, 'a') as log_file:
+        log_file.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {message}\n")
+    print(message)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Synchronize two folders.")
+    parser.add_argument("source_folder", help="Path to the source folder")
+    parser.add_argument("replica_folder", help="Path to the replica folder")
+    parser.add_argument("interval", type=int, help="Synchronization interval in seconds")
+    parser.add_argument("log_file", help="Path to the log file")
+
+    args = parser.parse_args()
+
+    while True:
+        sync_folders(args.source_folder, args.replica_folder, args.log_file)
+        time.sleep(args.interval)
